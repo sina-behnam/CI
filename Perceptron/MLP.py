@@ -9,13 +9,14 @@ def rand(start,end,shape):
     return r
 
 class MLP():
-    def __init__(self,input,num_neurons_hidden_layer,learning_rate=0.5):
+    def __init__(self,input,num_neurons_hidden_layer,learning_rate=0.5,num_output_unit=7):
         self.input = np.array(input)
         self.input_weights = rand(-0.5,0.5,shape=(self.input.shape[1]+1,num_neurons_hidden_layer)) ##* initialize first layer weights
-        self.output_weights = rand(-0.5,0.5,shape=(num_neurons_hidden_layer+1,self.input.shape[1])) ##* initialize secound layer weights
+        self.output_weights = rand(-0.5,0.5,shape=(num_neurons_hidden_layer+1,num_output_unit)) ##* initialize secound layer weights
         self.alpha = learning_rate
         self.num_neurons_hidden_layer = num_neurons_hidden_layer
         self.learning_rate = learning_rate
+        self.num_output_unit = num_output_unit
 
     def activation(self,x_array_input):
         result = x_array_input
@@ -33,8 +34,7 @@ class MLP():
         power = np.exp(x_array_input) 
         result = ((1-power)/(1+power))
         return result
-
-        
+   
     def differential_activation(self,_in,coefficient=0.5):
         f_in = self.activation(_in)
         return (coefficient*(1+f_in)*(1-f_in))
@@ -42,6 +42,19 @@ class MLP():
     def differential_one_d_activation(self,_in,coefficient=0.5):
         f_in = self.one_d_activation(_in)
         return (coefficient*(1+f_in)*(1-f_in))
+
+    def display_default_patterns(self,target):
+        for i in range(len(self.input)):
+            plt.plot(self.input[i],'og')
+            plt.plot(target[i],'xk')
+        plt.plot(self.input_weights,'y')
+        plt.plot(self.output_weights,'r')    
+        print(self.input.shape)
+        print(self.input_weights.shape)
+        print(self.output_weights.shape)
+        print(target.shape)
+        plt.show()        
+
 
     def trainnig(self,target=None,epsilon=0.5,velocity_trainnig=0.02):
         epoch = 0
@@ -52,9 +65,10 @@ class MLP():
             epoch += 1
             #####*(1)feedforward
             for i in range(len(self.input)):
-                z_in = self.input[i]@self.input_weights[1:] + self.input_weights[0]
+                plt.plot(self.input[i],'og')
+                z_in = self.input[i]@self.input_weights[:-1] + self.input_weights[-1]
                 z = self.one_d_activation(z_in)
-                y_in = z@self.output_weights[1:] + self.output_weights[0]
+                y_in = z@self.output_weights[:-1] + self.output_weights[-1]
                 y = self.one_d_activation(y_in) 
             #####*(2)Backpropagation of error
                 delta_k = (target[i] - y)*self.differential_one_d_activation(y_in).reshape(1,len(target[i]))
@@ -66,32 +80,23 @@ class MLP():
                 delta = (delta*self.differential_one_d_activation(z_in)).reshape(1,len(z_in))
                 x_input = np.transpose(self.input[i]).reshape(len(self.input[i]),1)
                 delta_v = self.learning_rate*(x_input@delta)
-                delta_v = np.append(delta_v,self.learning_rate*delta,axis=0) ## bias appended for out put weights
+                delta_v = np.append(delta_v,self.learning_rate*delta,axis=0) ## bias appended for input  weights
             #####*(3)Update weights and biases     
                 self.output_weights += delta_w
                 self.input_weights += delta_v                 
             #####! Stopping condition
                 max_w_change = np.amax(max(np.amax(np.abs(delta_v)) , np.amax(np.abs(delta_w))))
                 if max_w_change > Max:
-                    Max = max_w_change
+                    Max = max_w_change   
             if Max > epsilon:
-                flage = True
-
-            plt.plot(self.input,'o',color='green') 
-            plt.plot(self.output_weights,'D',color='red')        
-            plt.plot(self.input_weights,'x',color='blue')    
-            plt.plot(y,'o',color='black') 
+                flage = True  
+            plt.plot(y,'xk')    
             pause(velocity_trainnig)
             print(epoch)
-        print(epoch)    
+                 
+        plt.show()   
         
         return y
     def use(self):
         pass 
 
-
-data = np.loadtxt('font.txt',delimiter=',',dtype=float)
-p = MLP(data,num_neurons_hidden_layer=20,learning_rate=0.02) 
-p.trainnig(data,epsilon=0.025,velocity_trainnig=0.02)
-
-plt.show()

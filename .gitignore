@@ -2,3 +2,5 @@ venv/
 test.py
 *.zip
 mange.py
+*__pycache__
+*data/
